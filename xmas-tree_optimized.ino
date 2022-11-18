@@ -1,8 +1,12 @@
 
 #include <Adafruit_NeoPixel.h>    //needed for the WS2812
 
+#define LOOP(end)                  \
+  for (uint8_t i = 0; i < (end); i++) { 
+
+#define END_LOOP }
 #define PIN 1					            //Pin 1 is DATA In on the bottom Ring
-#define BRIGHTNESS 40 			      // brightness reduced (about 180mA max, 100mA average)
+#define BRIGHTNESS 255 			      // brightness reduced (about 180mA max, 100mA average)
 #define SIZEOFARRAY(X) sizeof(X) / sizeof(X[0])
 
 #define TOTAL_LED 61 // Fill by hand
@@ -40,24 +44,39 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
 
   // XMAS Letters:
-  xmas(1000);
-  delay(2000);
+  //xmas(1000);
+  //delay(2000);
 
 }
 
 void loop() {
 
+LOOP(40)
+  sparkling(strip.Color(0, 50, 0), 50);
+  delay(200);
+END_LOOP
+
   //Tree light [Green]
-  tree(strip.Color(0, 50, 0));
+LOOP(5)
+  treeRandom(strip.Color(0, 50, 0), true);
   delay(1000);
+END_LOOP
 
-  //Color crazy:
-  colorcrazy();
+LOOP(5)
+  treeRandom(strip.Color(0, 50, 0), false);
   delay(1000);
+END_LOOP
 
-  warpdrive(strip.Color(255, 255, 255));
-  comet(strip.Color(0, 0, 255));
+theaterChaseRainbow(5);
 
+LOOP(5)
+  tree(strip.Color(0, 50, 0), true);
+  delay(1000);
+END_LOOP
+
+  warpdrive(strip.Color(0, 50, 0));
+  comet(strip.Color(0, 50, 0));
+  rainbow(5);
 
   /*
     // Some example procedures showing how to display to the pixels:
@@ -125,27 +144,55 @@ void fadethemall(uint8_t _wait) {
   delay(_wait);
 }
 
-//This drives the WS2812 in a crazy pattern, fun!
-void colorcrazy() {
-  colorWipe(strip.Color(255, 0, 0), 25); // Red
-  colorWipe(strip.Color(0, 255, 0), 25); // Green
-  colorWipe(strip.Color(0, 0, 255), 25); // Blue
-  theaterChaseRainbow(5);
+void sparkling(uint32_t _color, uint8_t _wait) {
+  uint8_t pixel = random(TOTAL_LED - 1);
+  strip.fill(_color); 
+  strip.show();
+
+  strip.setPixelColor(pixel, strip.Color(255, 255, 255));
+  strip.show();
+  delay(_wait);
+  strip.setPixelColor(pixel, _color);
 }
 
 //This lights up the tree in green, then add the white "candles"
-void tree(uint32_t _color) {
-
-  colorWipe(_color, 50); // Green
-
+void tree(uint32_t _color, bool _blink) {
+  if (_blink) { strip.fill(_color); strip.show(); delay(400);}
+  else colorWipe(_color, 50);
+  
   //light "candles"
   //Show the S:
   for (uint8_t i = 0; i < SIZEOFARRAY(candles); i++) {
     strip.setPixelColor(pgm_read_byte(&candles[i]) - 1, strip.Color(255, 255, 255));
-    strip.show();
-    delay(50);
+    if (!_blink) { 
+      strip.show();
+      delay(50);
+    }
   }
 
+  if (_blink) strip.show();
+}
+
+//This lights up the tree in _color, then add the white random "candles"
+void treeRandom(uint32_t _color, bool _blink) {
+  uint8_t ringSize, led, totalLed = TOTAL_LED;
+  
+  if (_blink) { strip.fill(_color); strip.show(); }
+  else colorWipe(_color, 50);
+  delay(400);
+
+  //light "candles"
+  for (ringSize = 0;ringSize < SIZEOFARRAY(ringsSize); ++ringSize) {
+    totalLed -= ringsSize[ringSize]; 
+    for(led = 0; led < ringsSize[ringSize] / (ringSize + 1); led++) {
+      strip.setPixelColor(totalLed + random(ringsSize[ringSize]), strip.Color(255, 255, 255));
+      if (!_blink) { 
+        strip.show();
+        delay(50);
+      }
+    }
+    if (_blink) strip.show();
+  }
 }
 
 //This shows the X-M-A-S when viewed from above
